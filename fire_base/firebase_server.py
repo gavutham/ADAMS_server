@@ -26,7 +26,8 @@ def generate_sec_uuids(year,department,section,std='students'):
     for std in std_records:
         if std['year'] == year and std['department'] == department and std['section'] == section:
             #adding uuid to the students
-            uuid = uuid_generator.generate_uuid()
+            # uuid = uuid_generator.generate_uuid().hex
+            uuid = str(uuid_generator.generate_uuid())
             std['uuid'] = uuid
             std['pp_verify'] = std['bb_verify'] = std['ready'] = False; # ready = logged in
             print(std)
