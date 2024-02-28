@@ -25,7 +25,7 @@ def get_students(year, dep, sec):
     # return std
 
 
-@app.route("/<year>/<dep>/<sec>/<email>", methods=["GET"])
+@app.route("/get-student-uuid/<year>/<dep>/<sec>/<email>", methods=["GET"])
 def get_student_uuid(year, dep, sec, email):
     # std = firebase_server.display_students(year, dep, sec)
     # x = dict()
@@ -37,7 +37,10 @@ def get_student_uuid(year, dep, sec, email):
     if not(std_data):
         return 403
     else:
-        return str(std_data["uuid"])
+        for i in std_data:
+            if i["email"] == email:
+                return str(i["uuid"]), 200
+        return "Student not found!", 404
 
 
 # Top level function - TEACHER APP
