@@ -46,6 +46,8 @@ def get_student_uuid(year, dep, sec, email):
 # Top level function - TEACHER APP
 @app.route("/start-session/<year>/<dep>/<sec>")
 def start_session(year, dep, sec):
+    if (year+dep+sec in at_dict):
+        return "Session already started!", 404
     session_students = firebase_server.generate_sec_uuids(year, dep, sec)
     at_dict[year+dep+sec] = session_students
     mark_attendance.wait_for_login_threshold(year, dep, sec, at_dict) # Waits until 80% threshold reached.
@@ -53,6 +55,15 @@ def start_session(year, dep, sec):
     ready_uuids = (i["uuid"] for i in at_dict[year+dep+sec] if (i["ready"]) == True) # Only ready.
     return ready_uuids
     # return at_dict # for testing
+
+
+@app.route("/stop-session/<year>/<dep>/<sec>")
+def stop_session(year, dep, sec):
+    if (year+dep+sec):
+        del at_dict[year+dep+sec]
+        return "Session stopped!", 200
+    else:
+        return "Session not started yet!", 404
 
 
 # @app.route("/pp-verify/<year>/<dep>/<sec>/<email>")
@@ -98,6 +109,7 @@ def pp_verify(year, dep, sec):
     if not (year+dep+sec) in at_dict:
         return "Session not started!", 403
     req = request.get_json()
+
     # Parse req body. Get all UUIDS from teacher scan.
     req_pp_list = [] # list of dictionaries with keys uuid and rssi parsed from request.
     pp_list[year+dep+sec] = [] # Contains UUIDs for pp verification.
