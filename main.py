@@ -1,6 +1,6 @@
 # Importing flask module in the project is mandatory
 # An object of Flask class is our WSGI application.
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from fire_base import firebase_server
 from mark_attendance import mark_attendance
 from mongo import mongo
@@ -56,7 +56,7 @@ def start_session(year, dep, sec):
     ready_uuids = [i["uuid"] for i in
                    mongo.get_session_students(sessions_col, year, dep, sec)
                    if (i["ready"]) == True] # Only ready.
-    return ready_uuids, 200
+    return jsonify(ready_uuids), 200
     # return "Done!", 200
     # return at_dict # for testing
 
