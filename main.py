@@ -3,10 +3,18 @@
 from flask import Flask, request, make_response
 from fire_base import firebase_server
 from mark_attendance import mark_attendance
+from mongo import mongo
+from pymongo import MongoClient
 
 import time
 
-at_dict = dict()
+
+client = MongoClient('localhost', 27017, username='root', password='1234')
+
+db = client["adams_server_db"]
+sessions_col = db["sessions"]
+
+# at_dict = dict()
 pp_list = dict()
 
 app = Flask(__name__)
@@ -20,25 +28,18 @@ def hello_world():
 
 @app.route("/<year>/<dep>/<sec>", methods=["GET"])
 def get_students(year, dep, sec):
-    return at_dict.get("{}{}{}".format(year, dep, sec), 403)
-    # std = firebase_server.display_students(year, dep, sec)
-    # return std
+    return mongo.get_session_students(sessions_col, year, dep, sec), 200
 
 
 @app.route("/get-student-uuid/<year>/<dep>/<sec>/<email>", methods=["GET"])
 def get_student_uuid(year, dep, sec, email):
-    # std = firebase_server.display_students(year, dep, sec)
-    # x = dict()
-    # for i in std:
-    #     if i.get("email") == email:
-    #         x = i
-    #         break
-    std_data = at_dict.get("{}{}{}".format(year, dep, sec), None)
+    std_data = mongo.get_session_students(sessions_col, year, dep, sec)
     if not(std_data):
         return 403
     else:
         for i in std_data:
             if i["email"] == email:
+                sessions_col.update_one({"email": email}, {"$set": {"ready": True}})
                 return str(i["uuid"]), 200
         return "Student not found!", 404
 
@@ -46,21 +47,24 @@ def get_student_uuid(year, dep, sec, email):
 # Top level function - TEACHER APP
 @app.route("/start-session/<year>/<dep>/<sec>")
 def start_session(year, dep, sec):
-    if (year+dep+sec in at_dict):
+    if mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session already started!", 404
     session_students = firebase_server.generate_sec_uuids(year, dep, sec)
-    at_dict[year+dep+sec] = session_students
-    mark_attendance.wait_for_login_threshold(year, dep, sec, at_dict) # Waits until 80% threshold reached.
+    sessions_col.insert_many(session_students)
+    mark_attendance.wait_for_login_threshold(year, dep, sec, sessions_col) # Waits until 80% threshold reached.
     # mark_attendance.pp_start_session(year, dep, sec)
-    ready_uuids = (i["uuid"] for i in at_dict[year+dep+sec] if (i["ready"]) == True) # Only ready.
-    return ready_uuids
+    ready_uuids = [i["uuid"] for i in
+                   mongo.get_session_students(sessions_col, year, dep, sec)
+                   if (i["ready"]) == True] # Only ready.
+    return ready_uuids, 200
+    # return "Done!", 200
     # return at_dict # for testing
 
 
 @app.route("/stop-session/<year>/<dep>/<sec>")
 def stop_session(year, dep, sec):
-    if (year+dep+sec):
-        del at_dict[year+dep+sec]
+    if mongo.is_session_started(sessions_col, year, dep, sec):
+        sessions_col.delete_many({"year": year, "department": dep, "section": sec})
         return "Session stopped!", 200
     else:
         return "Session not started yet!", 404
@@ -84,41 +88,43 @@ def stop_session(year, dep, sec):
 # Student app
 @app.route("/ready/<year>/<dep>/<sec>/<email>")
 def ready(year, dep, sec, email):
-    if not (year+dep+sec) in at_dict:
+    if mongo.is_session_started(sessions_col, year, dep, sec):
+        sessions_col.update_one({"email": email}, {"$set": {"ready": True}})
+        return "Ready status marked.", 200
+    else:
         return "Session not started!", 403
-    for i in at_dict[year+dep+sec]:
-        if (i["email"] == email):
-            i["ready"] = True
-    return "Ready status marked.", 200
 
 
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
 def pp_status_verify(year, dep, sec, email):
-    if not (year+dep+sec) in at_dict:
+    if not mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session not started!", 403
-    for i in at_dict[year+dep+sec]:
-        if (i["email"] == email):
-            if i["pp_verify"] == True:
-                return True, 200
-    return False, 200
+    else:
+        student = sessions_col.find_one({"year": year, "department": dep, "section": sec})
+        if student["pp_verify"] == True:
+            return "true", 200
+        else:
+            return "false", 200
 
 
 # PP-VERIFY - Accessed by teacher at the first. Then accessed by students.
 @app.route("/pp-verify/<year>/<dep>/<sec>", methods=["POST"])
 def pp_verify(year, dep, sec):
-    if not (year+dep+sec) in at_dict:
+    if not mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session not started!", 403
     req = request.get_json()
 
-    # Parse req body. Get all UUIDS from teacher scan.
-    req_pp_list = [] # list of dictionaries with keys uuid and rssi parsed from request.
-    pp_list[year+dep+sec] = [] # Contains UUIDs for pp verification.
+    req_pp_list = list(req) # list of dictionaries with keys uuid and rssi parsed from request.
 
     # Parse and add to pp_list
-    pp_top5 = sorted(req_pp_list, key=lambda i: i['rssi'])[:5]
-    pp_list[year+dep+sec].update(req_pp_list)
+    pp_top5 = sorted(req_pp_list, key=lambda i: i['rssi'], reverse=True)[:5]
+    print(pp_top5)
+
+    for i in pp_top5:
+        sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True}})
+    # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
-    return 200
+    return pp_top5, 200
 
 
 # @app.route("/test-time/<timeout>")
@@ -128,4 +134,4 @@ def pp_verify(year, dep, sec):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', )
+    app.run(host='192.168.29.95', port=5000, debug=True)

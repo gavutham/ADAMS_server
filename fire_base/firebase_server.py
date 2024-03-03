@@ -35,4 +35,4 @@ def generate_sec_uuids(year,department,section,std='students'):
     return req_stdlis
 
 
-print(generate_sec_uuids('I','MECH','A','students'))
+# print(generate_sec_uuids('I','MECH','A','students'))
