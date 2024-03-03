@@ -11,4 +11,4 @@ bind = os.environ.get('GUNICORN_BIND', '192.168.29.95:5000')
 
 forwarded_allow_ips = '*'
 
-secure_scheme_headers = { 'X-Forwarded-Proto': 'https' }
+secure_scheme_headers = { 'X-Forwarded-Proto': 'http' }

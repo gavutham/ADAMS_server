@@ -8,14 +8,10 @@ from pymongo import MongoClient
 
 import time
 
-
 client = MongoClient('localhost', 27017, username='root', password='1234')
 
 db = client["adams_server_db"]
 sessions_col = db["sessions"]
-
-# at_dict = dict()
-pp_list = dict()
 
 app = Flask(__name__)
 
@@ -70,31 +66,6 @@ def stop_session(year, dep, sec):
         return "Session not started yet!", 404
 
 
-# @app.route("/pp-verify/<year>/<dep>/<sec>/<email>")
-# def pp_verify(year, dep, sec, email):
-#     if not (year+dep+sec in at_dict):
-#         return "Session not started yet!", 403;
-#     else:
-#         students = at_dict[year+dep+sec]
-#         for i in students:
-#             if (i["email"] == email):
-#                 i["pp_verify"] = True;
-#         print(at_dict)
-#         resp = make_response("PP Verified", 200)
-#         resp.set_cookie('email', email)
-#         return resp
-
-
-# # Student app
-# @app.route("/ready/<year>/<dep>/<sec>/<email>")
-# def ready(year, dep, sec, email):
-#     if mongo.is_session_started(sessions_col, year, dep, sec):
-#         sessions_col.update_one({"email": email}, {"$set": {"ready": True}})
-#         return "Ready status marked.", 200
-#     else:
-#         return "Session not started!", 403
-
-
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
 def pp_status_verify(year, dep, sec, email):
     if not mongo.is_session_started(sessions_col, year, dep, sec):
@@ -125,12 +96,6 @@ def pp_verify(year, dep, sec):
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
     return pp_top5, 200
-
-
-# @app.route("/test-time/<timeout>")
-# def test_timeout(timeout):
-#     time.sleep(int(timeout))
-#     return "Success. We waited for {} seconds!".format(timeout), 200;
 
 
 if __name__ == '__main__':
