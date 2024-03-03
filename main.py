@@ -85,14 +85,14 @@ def stop_session(year, dep, sec):
 #         return resp
 
 
-# Student app
-@app.route("/ready/<year>/<dep>/<sec>/<email>")
-def ready(year, dep, sec, email):
-    if mongo.is_session_started(sessions_col, year, dep, sec):
-        sessions_col.update_one({"email": email}, {"$set": {"ready": True}})
-        return "Ready status marked.", 200
-    else:
-        return "Session not started!", 403
+# # Student app
+# @app.route("/ready/<year>/<dep>/<sec>/<email>")
+# def ready(year, dep, sec, email):
+#     if mongo.is_session_started(sessions_col, year, dep, sec):
+#         sessions_col.update_one({"email": email}, {"$set": {"ready": True}})
+#         return "Ready status marked.", 200
+#     else:
+#         return "Session not started!", 403
 
 
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
