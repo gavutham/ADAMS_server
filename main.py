@@ -8,7 +8,7 @@ from pymongo import MongoClient
 
 import time
 
-client = MongoClient('localhost', 27017, username='root', password='1234')
+client = MongoClient('localhost', 27017)
 
 db = client["adams_server_db"]
 sessions_col = db["sessions"]
