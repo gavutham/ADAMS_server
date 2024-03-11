@@ -84,20 +84,23 @@ def pp_verify(year, dep, sec):
     if not mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session not started!", 403
     req = request.get_json()
+    print(req)
 
     req_pp_list = list(req) # list of dictionaries with keys uuid and rssi parsed from request.
     std_data = mongo.get_session_students(sessions_col, year, dep, sec)
     std_uuids = [i["uuid"] for i in std_data]
+    print("STD UUIDS:")
+    print(std_uuids)
 
     # Parse and add to pp_list
     pp_sorted = sorted(req_pp_list, key=lambda i: i['rssi'], reverse=True)
     pp_top5 = []
     for i in pp_sorted:
-        if i in std_uuids and len(pp_top5) < 5:
+        if i["uuid"] in std_uuids and len(pp_top5) < 5:
             pp_top5.append(i)
     print(pp_top5)
 
-    for i in pp_top5:
+    for i in pp_top5[:1]:
         sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True}})
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
