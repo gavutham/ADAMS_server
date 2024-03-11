@@ -107,7 +107,8 @@ def pp_verify(year, dep, sec):
     print(pp_top5)
 
     for i in pp_top5[:1]:
-        sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True}})
+        # att_verified = True is hardcoded. Should happen only after both bb-verify and face-auth is done.
+        sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True, "att_verified": True}})
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
     return pp_top5, 200
