@@ -76,8 +76,7 @@ class mysql_connector:
                 self.mark_attendance_mail_id(email, sub_code, prd)
 
 
-
-my_db_connect = mysql_connector('localhost','root','password','attendance_management')
+my_db_connect = mysql_connector('127.0.0.1','root','my-secret-pw','attendance_management')
 
 my_db_connect.fetchall('attendance')
 

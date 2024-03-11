@@ -1,3 +1,5 @@
+create database if not exists attendance_management;
+
 use attendance_management;
 
 drop table if exists student;
