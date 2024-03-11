@@ -86,9 +86,15 @@ def pp_verify(year, dep, sec):
     req = request.get_json()
 
     req_pp_list = list(req) # list of dictionaries with keys uuid and rssi parsed from request.
+    std_data = mongo.get_session_students(sessions_col, year, dep, sec)
+    std_uuids = [i["uuid"] for i in std_data]
 
     # Parse and add to pp_list
-    pp_top5 = sorted(req_pp_list, key=lambda i: i['rssi'], reverse=True)[:5]
+    pp_sorted = sorted(req_pp_list, key=lambda i: i['rssi'], reverse=True)
+    pp_top5 = []
+    for i in pp_sorted:
+        if i in std_uuids and len(pp_top5) < 5:
+            pp_top5.append(i)
     print(pp_top5)
 
     for i in pp_top5:
@@ -99,4 +105,4 @@ def pp_verify(year, dep, sec):
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.29.95', port=5000, debug=True)
+    app.run(host='144.91.106.164', port=8000, debug=True)
