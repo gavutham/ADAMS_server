@@ -7,7 +7,7 @@ threads = int(os.environ.get('GUNICORN_THREADS', '4'))
 
 # timeout = int(os.environ.get('GUNICORN_TIMEOUT', '120'))
 
-bind = os.environ.get('GUNICORN_BIND', '192.168.29.95:5000')
+bind = os.environ.get('GUNICORN_BIND', '144.91.106.164:8000')
 
 forwarded_allow_ips = '*'
 
