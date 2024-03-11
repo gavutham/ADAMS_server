@@ -71,7 +71,7 @@ def pp_status_verify(year, dep, sec, email):
     if not mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session not started!", 403
     else:
-        student = sessions_col.find_one({"year": year, "department": dep, "section": sec})
+        student = sessions_col.find_one({"year": year, "department": dep, "section": sec, "email": email})
         if student["pp_verify"] == True:
             return "true", 200
         else:
