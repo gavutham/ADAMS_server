@@ -4,6 +4,7 @@ from flask import Flask, request, make_response, jsonify
 from fire_base import firebase_server
 from mark_attendance import mark_attendance
 from mongo import mongo
+from mysql import mysql_server
 from pymongo import MongoClient
 
 import time
@@ -60,6 +61,11 @@ def start_session(year, dep, sec):
 @app.route("/stop-session/<year>/<dep>/<sec>")
 def stop_session(year, dep, sec):
     if mongo.is_session_started(sessions_col, year, dep, sec):
+        std_data = mongo.get_session_students()
+        data = [{"email": i["email"], "att_verified": i["att_verified"]}
+                    for i in std_data
+                ]
+        mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
         sessions_col.delete_many({"year": year, "department": dep, "section": sec})
         return "Session stopped!", 200
     else:
