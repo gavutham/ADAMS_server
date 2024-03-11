@@ -4,7 +4,7 @@ from flask import Flask, request, make_response, jsonify
 from fire_base import firebase_server
 from mark_attendance import mark_attendance
 from mongo import mongo
-from mysql import mysql_server
+from mysql_server import mysql_server
 from pymongo import MongoClient
 
 import time
