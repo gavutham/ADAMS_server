@@ -5,7 +5,7 @@ from datetime import date
 class mysql_connector:
     
     #initializing the host, user, password and database
-    def _init_(self,host,user,password,database):
+    def __init__(self,host,user,password,database):
         self.host = host
         self.user = user
         self.password = password 
