@@ -61,7 +61,7 @@ def start_session(year, dep, sec):
 @app.route("/stop-session/<year>/<dep>/<sec>")
 def stop_session(year, dep, sec):
     if mongo.is_session_started(sessions_col, year, dep, sec):
-        std_data = mongo.get_session_students()
+        std_data = mongo.get_session_students(sessions_col, year, dep, sec)
         data = [{"email": i["email"], "att_verified": i["att_verified"]}
                     for i in std_data
                 ]
