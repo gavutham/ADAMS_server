@@ -45,7 +45,7 @@ def get_student_uuid(year, dep, sec, email):
 # Top level function - TEACHER APP
 @app.route("/start-session/<year>/<dep>/<sec>")
 def start_session(year, dep, sec):
-    timeout_thread = threading.Thread(target=stop_session, args=(year, dep, sec))
+    timeout_thread = threading.Thread(target=stop_session_thread, args=(year, dep, sec))
     timeout_thread.start()
     if mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session already started!", 404
@@ -61,9 +61,13 @@ def start_session(year, dep, sec):
     # return at_dict # for testing
 
 
+def stop_session_thread(year, dep, sec):
+    time.sleep(180)
+    stop_session(year, dep, sec)
+
+
 @app.route("/stop-session/<year>/<dep>/<sec>")
 def stop_session(year, dep, sec):
-    time.sleep(180)
     if mongo.is_session_started(sessions_col, year, dep, sec):
         std_data = mongo.get_session_students(sessions_col, year, dep, sec)
         data = [{"email": i["email"], "att_verified": i["att_verified"]}
