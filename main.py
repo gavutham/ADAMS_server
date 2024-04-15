@@ -79,6 +79,13 @@ def stop_session(year, dep, sec):
     else:
         return "Session not started yet!", 404
 
+@app.route("/is-session-started/<year>/<dep>/<sec>")
+def is_session_started(year, dep, sec):
+    if mongo.is_session_started(sessions_col, year, dep, sec):
+        return "true";
+    else:
+        return "false";
+
 
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
 def pp_status_verify(year, dep, sec, email):
