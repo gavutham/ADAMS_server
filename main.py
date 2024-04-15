@@ -91,7 +91,7 @@ def is_session_started(year, dep, sec):
 @app.route("/post-beacon-details/<ip>/<classroom>", methods=["POST"])
 def post_beacon_details(ip, classroom):
     beacons_col.insert_one({"ip": ip, "classroom": classroom})
-    return 200
+    return "Done!", 200
 
 
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
