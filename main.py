@@ -14,6 +14,7 @@ client = MongoClient('localhost', 27017)
 
 db = client["adams_server_db"]
 sessions_col = db["sessions"]
+beacons_col = db["beacons"]
 
 app = Flask(__name__)
 
@@ -85,6 +86,11 @@ def is_session_started(year, dep, sec):
         return "true";
     else:
         return "false";
+
+
+@app.route("/post-beacon-details/<ip>/<classroom>", methods=["POST"])
+def post_beacon_details(ip, classroom):
+    beacons_col.insert_one({"ip": ip, "classroom": classroom})
 
 
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
