@@ -142,7 +142,7 @@ def pp_verify(year, dep, sec):
 @app.route("/bb-verify/<year>/<dep>/<sec>")
 def bb_verify(year, dep, sec):
     yds = year+dep+sec
-    ips = [i["ip"] for i in beacons_col.find({"classroom": {"$regex": "*"+yds+"*"}})]
+    ips = [i["ip"] for i in beacons_col.find({"classroom": {"$regex": yds}})]
     for ip in ips:
         resp = request.get(ip+"/ble_scan")
         print(resp)
