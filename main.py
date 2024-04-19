@@ -139,5 +139,14 @@ def pp_verify(year, dep, sec):
     return pp_top5, 200
 
 
+@app.route("/bb-verify/<year>/<dep>/<sec>")
+def bb_verify(year, dep, sec):
+    yds = year+dep+sec
+    ips = [i["ip"] for i in beacons_col.find({"classroom": {"$regex": "*"+yds+"*"}})]
+    for ip in ips:
+        resp = request.get(ip+"/ble_scan")
+        print(resp)
+
+
 if __name__ == '__main__':
     app.run(host='144.91.106.164', port=8000, debug=True)
