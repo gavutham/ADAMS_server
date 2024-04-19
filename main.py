@@ -91,7 +91,7 @@ def is_session_started(year, dep, sec):
 @app.route("/post-beacon-details/<ip>/<classroom>", methods=["POST"])
 def post_beacon_details(ip, classroom):
     if beacons_col.find({"ip": ip}): # If a beacon server with ip already exists.
-        beacons_col.update_one({"ip": ip}, {"$inc": {"classroom": classroom}}) # update classroom.
+        beacons_col.update_one({"ip": ip}, {"$set": {"classroom": classroom}}) # update classroom.
     else:
         beacons_col.insert_one({"ip": ip, "classroom": classroom}) # init beacon.
     return "Done!", 200
