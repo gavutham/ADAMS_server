@@ -1,5 +1,6 @@
 # Importing flask module in the project is mandatory
 # An object of Flask class is our WSGI application.
+import requests
 from flask import Flask, request, make_response, jsonify
 from fire_base import firebase_server
 from mark_attendance import mark_attendance
@@ -144,7 +145,7 @@ def bb_verify(year, dep, sec):
     yds = year+dep+sec
     ips = [i["ip"] for i in beacons_col.find({"classroom": {"$regex": yds}})]
     for ip in ips:
-        resp = request.get(ip+"/ble_scan")
+        resp = requests.get(ip+"/ble_scan")
         print(resp)
 
 
