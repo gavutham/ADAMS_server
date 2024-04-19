@@ -91,10 +91,7 @@ def is_session_started(year, dep, sec):
 
 @app.route("/post-beacon-details/<ip>/<classroom>", methods=["POST"])
 def post_beacon_details(ip, classroom):
-    if beacons_col.find({"ip": ip}): # If a beacon server with ip already exists.
-        beacons_col.update_one({"ip": ip}, {"$set": {"classroom": classroom}}) # update classroom.
-    else:
-        beacons_col.insert_one({"ip": ip, "classroom": classroom}) # init beacon.
+    beacons_col.replace_one({"ip": ip}, {"ip": ip, "classroom": classroom}, upsert=True) # init beacon.
     return "Done!", 200
 
 
@@ -140,13 +137,23 @@ def pp_verify(year, dep, sec):
     return pp_top5, 200
 
 
-@app.route("/bb-verify/<year>/<dep>/<sec>")
-def bb_verify(year, dep, sec):
+@app.route("/get-beacon-ips/<year>/<dep>/<sec>", methods=["GET"])
+def get_beacon_ips(year, dep, sec):
     yds = year+dep+sec
     ips = [i["ip"] for i in beacons_col.find({"classroom": {"$regex": yds}})]
-    for ip in ips:
-        resp = requests.get("http://"+ip+"/ble_scan")
-        print(resp)
+    # print(ips)
+    return jsonify(ips)
+    # for ip in ips:
+        # resp = requests.get("http://"+ip+"/ble_scan")
+        # print(str(resp))
+
+
+@app.route("/bb-verify/<year>/<dep>/<sec>", methods=["POST"])
+def bb_verify(year, dep, sec):
+    req = request.get_json()
+    print(req)
+    return "Done!", 200
+
 
 
 if __name__ == '__main__':
