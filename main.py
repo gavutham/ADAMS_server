@@ -1,5 +1,6 @@
 # Importing flask module in the project is mandatory
 # An object of Flask class is our WSGI application.
+import requests
 from flask import Flask, request, make_response, jsonify
 from fire_base import firebase_server
 from mark_attendance import mark_attendance
@@ -14,6 +15,7 @@ client = MongoClient('localhost', 27017)
 
 db = client["adams_server_db"]
 sessions_col = db["sessions"]
+beacons_col = db["beacons"]
 
 app = Flask(__name__)
 
@@ -87,6 +89,12 @@ def is_session_started(year, dep, sec):
         return "false";
 
 
+@app.route("/post-beacon-details/<ip>/<classroom>", methods=["POST"])
+def post_beacon_details(ip, classroom):
+    beacons_col.replace_one({"ip": ip}, {"ip": ip, "classroom": classroom}, upsert=True) # init beacon.
+    return "Done!", 200
+
+
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
 def pp_status_verify(year, dep, sec, email):
     if not mongo.is_session_started(sessions_col, year, dep, sec):
@@ -127,6 +135,25 @@ def pp_verify(year, dep, sec):
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
     return pp_top5, 200
+
+
+@app.route("/get-beacon-ips/<year>/<dep>/<sec>", methods=["GET"])
+def get_beacon_ips(year, dep, sec):
+    yds = year+dep+sec
+    ips = [i["ip"] for i in beacons_col.find({"classroom": {"$regex": yds}})]
+    # print(ips)
+    return jsonify(ips)
+    # for ip in ips:
+        # resp = requests.get("http://"+ip+"/ble_scan")
+        # print(str(resp))
+
+
+@app.route("/bb-verify/<year>/<dep>/<sec>", methods=["POST"])
+def bb_verify(year, dep, sec):
+    req = request.get_json()
+    print(req)
+    return "Done!", 200
+
 
 
 if __name__ == '__main__':
