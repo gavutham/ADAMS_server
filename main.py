@@ -60,6 +60,9 @@ def start_session(year, dep, sec):
     ready_uuids = [i["uuid"] for i in
                    mongo.get_session_students(sessions_col, year, dep, sec)
                    if (i["ready"]) == True] # Only ready.
+
+    firebase_server.set_attendance_state(year, dep, sec, True)
+
     return jsonify(ready_uuids), 200
     # return "Done!", 200
     # return at_dict # for testing
@@ -79,6 +82,7 @@ def stop_session(year, dep, sec):
                 ]
         mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
         sessions_col.delete_many({"year": year, "department": dep, "section": sec})
+        firebase_server.set_attendance_state(year, dep, sec, False)
         return "Session stopped!", 200
     else:
         return "Session not started yet!", 404
