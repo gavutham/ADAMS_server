@@ -8,6 +8,7 @@ from mongo import mongo
 from mysql_Server import mysql_server
 from pymongo import MongoClient
 import threading 
+import json
 
 import time
 
@@ -16,6 +17,7 @@ client = MongoClient('localhost', 27017)
 db = client["adams_server_db"]
 sessions_col = db["sessions"]
 beacons_col = db["beacons"]
+pp_status_col = db["pp_status"]
 
 app = Flask(__name__)
 
@@ -110,9 +112,11 @@ def pp_status_verify(year, dep, sec, email):
 # PP-VERIFY - Accessed by teacher at the first. Then accessed by students.
 @app.route("/pp-verify/<year>/<dep>/<sec>", methods=["POST"])
 def pp_verify(year, dep, sec):
+    yds = year+dep+sec
     if not mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session not started!", 403
     req = request.get_json()
+    pp_status_col.insert_one({"classroom": yds}, {"classroom": yds, "scan_details": req})
     print(req)
 
     req_pp_list = list(req) # list of dictionaries with keys uuid and rssi parsed from request.
@@ -129,12 +133,18 @@ def pp_verify(year, dep, sec):
             pp_top5.append(i)
     print(pp_top5)
 
-    for i in pp_top5[:1]:
+    for i in pp_top5[:2]:
         # att_verified = True is hardcoded. Should happen only after both bb-verify and face-auth is done.
         sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True, "att_verified": True}})
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
     return pp_top5, 200
+
+
+def pp_avg_rssi(year, dep, sec):
+    yds = year+dep+sec
+    pp_lists = pp_status_col.find({"classroom": yds})
+
 
 
 @app.route("/get-beacon-ips/<year>/<dep>/<sec>", methods=["GET"])
@@ -151,7 +161,15 @@ def get_beacon_ips(year, dep, sec):
 @app.route("/bb-verify/<year>/<dep>/<sec>", methods=["POST"])
 def bb_verify(year, dep, sec):
     req = request.get_json()
-    print(req)
+    bad_uuids = []
+    for scan in req:
+        scan_results = scan["scan_results"]
+        for device in scan_results:
+            if device["rssi"] > -75 and device["uuid"] not in bad_uuids:
+                bad_uuids.append(device["uuid"].lower())
+    print("Req: ", req)
+    print("Bad UUIDS: ", bad_uuids)
+    sessions_col.update_many({"uuid": {"$in": bad_uuids}}, {"$set": {"bb_verify": False}})
     return "Done!", 200
 
 
