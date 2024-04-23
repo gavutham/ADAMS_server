@@ -41,7 +41,8 @@ def generate_sec_uuids(year,department,section,std='students'):
             # uuid = uuid_generator.generate_uuid().hex
             uuid = str(uuid_generator.generate_uuid())
             std['uuid'] = uuid
-            std['pp_verify'] = std['bb_verify'] = std['ready'] = std['att_verified'] = False; # ready = logged in
+            std['pp_verify'] = std['ready'] = std['att_verified'] = False; # ready = logged in
+            std['bb_verify'] = True; # Default considered to be inside classroom.
             print(std)
             req_stdlis.append(std)
     return req_stdlis

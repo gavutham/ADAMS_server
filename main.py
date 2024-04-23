@@ -1,5 +1,6 @@
 # Importing flask module in the project is mandatory
 # An object of Flask class is our WSGI application.
+import requests
 from flask import Flask, request, make_response, jsonify
 from fire_base import firebase_server
 from mark_attendance import mark_attendance
@@ -7,6 +8,7 @@ from mongo import mongo
 from mysql_Server import mysql_server
 from pymongo import MongoClient
 import threading 
+import json
 
 import time
 
@@ -14,6 +16,8 @@ client = MongoClient('localhost', 27017)
 
 db = client["adams_server_db"]
 sessions_col = db["sessions"]
+beacons_col = db["beacons"]
+pp_status_col = db["pp_status"]
 
 app = Flask(__name__)
 
@@ -83,6 +87,19 @@ def stop_session(year, dep, sec):
     else:
         return "Session not started yet!", 404
 
+@app.route("/is-session-started/<year>/<dep>/<sec>")
+def is_session_started(year, dep, sec):
+    if mongo.is_session_started(sessions_col, year, dep, sec):
+        return "true";
+    else:
+        return "false";
+
+
+@app.route("/post-beacon-details/<ip>/<classroom>", methods=["POST"])
+def post_beacon_details(ip, classroom):
+    beacons_col.replace_one({"ip": ip}, {"ip": ip, "classroom": classroom}, upsert=True) # init beacon.
+    return "Done!", 200
+
 
 @app.route("/pp-status-verify/<year>/<dep>/<sec>/<email>")
 def pp_status_verify(year, dep, sec, email):
@@ -99,9 +116,11 @@ def pp_status_verify(year, dep, sec, email):
 # PP-VERIFY - Accessed by teacher at the first. Then accessed by students.
 @app.route("/pp-verify/<year>/<dep>/<sec>", methods=["POST"])
 def pp_verify(year, dep, sec):
+    yds = year+dep+sec
     if not mongo.is_session_started(sessions_col, year, dep, sec):
         return "Session not started!", 403
     req = request.get_json()
+    pp_status_col.insert_one({"classroom": yds}, {"classroom": yds, "scan_details": req})
     print(req)
 
     req_pp_list = list(req) # list of dictionaries with keys uuid and rssi parsed from request.
@@ -118,12 +137,45 @@ def pp_verify(year, dep, sec):
             pp_top5.append(i)
     print(pp_top5)
 
-    for i in pp_top5[:1]:
+    for i in pp_top5[:2]:
         # att_verified = True is hardcoded. Should happen only after both bb-verify and face-auth is done.
         sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True, "att_verified": True}})
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
     return pp_top5, 200
+
+
+def pp_avg_rssi(year, dep, sec):
+    yds = year+dep+sec
+    pp_lists = pp_status_col.find({"classroom": yds})
+
+
+
+@app.route("/get-beacon-ips/<year>/<dep>/<sec>", methods=["GET"])
+def get_beacon_ips(year, dep, sec):
+    yds = year+dep+sec
+    ips = [i["ip"] for i in beacons_col.find({"classroom": {"$regex": yds}})]
+    # print(ips)
+    return jsonify(ips)
+    # for ip in ips:
+        # resp = requests.get("http://"+ip+"/ble_scan")
+        # print(str(resp))
+
+
+@app.route("/bb-verify/<year>/<dep>/<sec>", methods=["POST"])
+def bb_verify(year, dep, sec):
+    req = request.get_json()
+    bad_uuids = []
+    for scan in req:
+        scan_results = scan["scan_results"]
+        for device in scan_results:
+            if device["rssi"] > -75 and device["uuid"] not in bad_uuids:
+                bad_uuids.append(device["uuid"].lower())
+    print("Req: ", req)
+    print("Bad UUIDS: ", bad_uuids)
+    sessions_col.update_many({"uuid": {"$in": bad_uuids}}, {"$set": {"bb_verify": False}})
+    return "Done!", 200
+
 
 
 if __name__ == '__main__':
