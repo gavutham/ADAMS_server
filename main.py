@@ -126,19 +126,20 @@ def pp_verify(year, dep, sec):
     print(std_uuids)
 
     # Parse and add to pp_list
-    pp_sorted = sorted(req_pp_list, key=lambda i: i['rssi'], reverse=True)
-    pp_top5 = []
-    for i in pp_sorted:
-        if i["uuid"] in std_uuids and len(pp_top5) < 5:
-            pp_top5.append(i)
-    print(pp_top5)
+    pp_valid = [i for i in req_pp_list if i["uuid"] in std_uuids]
+    pp_sorted = sorted(pp_valid, key=lambda i: i["rssi"], reverse=True)
+    pp_top = pp_sorted[:2]
+    print(pp_top)
 
-    for i in pp_top5[:2]:
+    for i in pp_top:
         # att_verified = True is hardcoded. Should happen only after both bb-verify and face-auth is done.
         sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True, "att_verified": True}})
+
+    for i in pp_sorted:
+        sessions_col.update_one({"uuid": i["uuid"], "pp_rssi": {"$lt": i["rssi"]}}, {"$set": {"pp_rssi": i["rssi"]}}, upsert=True)
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
-    return pp_top5, 200
+    return pp_top, 200
 
 
 def pp_avg_rssi(year, dep, sec):
@@ -161,15 +162,13 @@ def get_beacon_ips(year, dep, sec):
 @app.route("/bb-verify/<year>/<dep>/<sec>", methods=["POST"])
 def bb_verify(year, dep, sec):
     req = request.get_json()
-    bad_uuids = []
+    std_data = mongo.get_session_students(sessions_col, year, dep, sec)
     for scan in req:
         scan_results = scan["scan_results"]
         for device in scan_results:
-            if device["rssi"] > -75 and device["uuid"] not in bad_uuids:
-                bad_uuids.append(device["uuid"].lower())
+            mongo.update_one({"uuid": device["uuid"].lower(), "pp_rssi": {"$lt": device["rssi"]}})
+            print("BB VERIFY (FALSE): ", device["uuid"].lower())
     print("Req: ", req)
-    print("Bad UUIDS: ", bad_uuids)
-    sessions_col.update_many({"uuid": {"$in": bad_uuids}}, {"$set": {"bb_verify": False}})
     return "Done!", 200
 
 
