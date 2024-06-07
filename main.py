@@ -72,6 +72,7 @@ def stop_session_thread(year, dep, sec):
 
 @app.route("/stop-session/<year>/<dep>/<sec>")
 def stop_session(year, dep, sec):
+    sessions_col.update_many({"$and": [{"pp_verify": True}, {"bb_verify": True}]}, {"$set": {"att_verified": True}})
     if mongo.is_session_started(sessions_col, year, dep, sec):
         std_data = mongo.get_session_students(sessions_col, year, dep, sec)
         data = [{"email": i["email"], "att_verified": i["att_verified"]}
@@ -133,10 +134,11 @@ def pp_verify(year, dep, sec):
 
     for i in pp_top:
         # att_verified = True is hardcoded. Should happen only after both bb-verify and face-auth is done.
-        sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True, "att_verified": True}})
+        # sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True, "att_verified": True}})
+        sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True}})
 
     for i in pp_sorted:
-        sessions_col.update_one({"uuid": i["uuid"], "pp_rssi": {"$lt": i["rssi"]}}, {"$set": {"pp_rssi": i["rssi"]}}, upsert=True)
+        sessions_col.update_one({"uuid": i["uuid"], "pp_rssi": {"$lt": i["rssi"]}}, {"$set": {"pp_rssi": i["rssi"]}})
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
     return pp_top, 200
@@ -162,11 +164,14 @@ def get_beacon_ips(year, dep, sec):
 @app.route("/bb-verify/<year>/<dep>/<sec>", methods=["POST"])
 def bb_verify(year, dep, sec):
     req = request.get_json()
-    std_data = mongo.get_session_students(sessions_col, year, dep, sec)
+    # req = json.loads(req)
+    print(req)
+    # return "Done!", 200
     for scan in req:
         scan_results = scan["scan_results"]
         for device in scan_results:
-            mongo.update_one({"uuid": device["uuid"].lower(), "pp_rssi": {"$lt": device["rssi"]}})
+            print(device)
+            sessions_col.update_one({"uuid": device["uuid"].lower(), "$and": [{"pp_rssi": {"$lt": device["rssi"]}}, {"pp_rssi": {"$ne": float('inf')}}]}, {"$set": {"bb_verify": False}})
             print("BB VERIFY (FALSE): ", device["uuid"].lower())
     print("Req: ", req)
     return "Done!", 200
