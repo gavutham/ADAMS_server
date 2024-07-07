@@ -10,8 +10,9 @@ from pymongo import MongoClient
 import threading 
 import json
 
+import datetime
 import time
-
+import csv
 client = MongoClient('localhost', 27017)
 
 db = client["adams_server_db"]
@@ -21,9 +22,33 @@ pp_status_col = db["pp_status"]
 
 app = Flask(__name__)
 
+def atd_table(dic):
+    """
+    takes the sessions completed dic as input
+    returns a list of  'email','name','bb_verify','pp_verify','att_verified values"""
+    atd_data = []
+    for students in dic:
+        atd_data.append([students['email'] ,students['name'] ,str(students['bb_verify']) ,str(students['pp_verify']) ,str(students['att_verified'])])
+    print (atd_data)
+    return atd_data
+
+
+def write_csv(data,lis_name_file):
+    '''
+    takes inp as lis of atd_data in a list of list format
+        return a csv file with name as concat of the lis_name_file with the values of atd_data
+        '''
+    file_name = ''.join(lis_name_file)+'.csv'
+
+    with open(file_name, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['email','name','bb_verify','pp_verify','att_verified'])
+        writer.writerows(data)
+
+
 @app.route('/')
 def hello_world():
-    #have to give the variables to the display _students dynamically in post request
+#have to give the variables to the display _students dynamically in post request
     std = firebase_server.display_students('I','MECH','A')
     return std
 
@@ -72,12 +97,14 @@ def stop_session_thread(year, dep, sec):
 
 @app.route("/stop-session/<year>/<dep>/<sec>")
 def stop_session(year, dep, sec):
-    sessions_col.update_many({"$and": [{"pp_verify": True}, {"bb_verify": True}]}, {"$set": {"att_verified": True}})
+    sessions_col.update_many({"pp_verify": True}, {"$set": {"att_verified": True}})
     if mongo.is_session_started(sessions_col, year, dep, sec):
         std_data = mongo.get_session_students(sessions_col, year, dep, sec)
         data = [{"email": i["email"], "att_verified": i["att_verified"]}
                     for i in std_data
                 ]
+        atd_data = atd_table(std_data)
+        write_csv(atd_data, "{}{}{}-{}".format(year, dep, sec, datetime.date.today()))
         mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
         sessions_col.delete_many({"year": year, "department": dep, "section": sec})
         return "Session stopped!", 200
@@ -129,16 +156,22 @@ def pp_verify(year, dep, sec):
     # Parse and add to pp_list
     pp_valid = [i for i in req_pp_list if i["uuid"] in std_uuids]
     pp_sorted = sorted(pp_valid, key=lambda i: i["rssi"], reverse=True)
-    pp_top = pp_sorted[:2]
-    print(pp_top)
 
-    for i in pp_top:
+    count = 0;
+    pp_top = []
+    for i in pp_sorted:
         # att_verified = True is hardcoded. Should happen only after both bb-verify and face-auth is done.
         # sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True, "att_verified": True}})
-        sessions_col.update_one({"uuid": i["uuid"]}, {"$set": {"pp_verify": True}})
-
-    for i in pp_sorted:
+        result = sessions_col.update_one({"uuid": i["uuid"], "bb_rssi": {"$lt": i["rssi"]}}, {"$set": {"pp_verify": True}})
         sessions_col.update_one({"uuid": i["uuid"], "pp_rssi": {"$lt": i["rssi"]}}, {"$set": {"pp_rssi": i["rssi"]}})
+        if result.matched_count > 0:
+            pp_top.append(i)
+            count += 1
+            if count >= 2:
+                break;
+
+    # for i in pp_sorted:
+    #     sessions_col.update_one({"uuid": i["uuid"], "pp_rssi": {"$gt": i["rssi"]}}, {"$set": {"pp_rssi": i["rssi"]}})
     # pp_list[year+dep+sec].update(req_pp_list)
     # Set pp_verify = True for closest 5 students.
     return pp_top, 200
@@ -147,7 +180,6 @@ def pp_verify(year, dep, sec):
 def pp_avg_rssi(year, dep, sec):
     yds = year+dep+sec
     pp_lists = pp_status_col.find({"classroom": yds})
-
 
 
 @app.route("/get-beacon-ips/<year>/<dep>/<sec>", methods=["GET"])
@@ -171,8 +203,9 @@ def bb_verify(year, dep, sec):
         scan_results = scan["scan_results"]
         for device in scan_results:
             print(device)
-            sessions_col.update_one({"uuid": device["uuid"].lower(), "$and": [{"pp_rssi": {"$lt": device["rssi"]}}, {"pp_rssi": {"$ne": float('inf')}}]}, {"$set": {"bb_verify": False}})
-            print("BB VERIFY (FALSE): ", device["uuid"].lower())
+            sessions_col.update_one({"uuid": device["uuid"].lower(), "bb_rssi": {"$lt": device["rssi"]}}, {"$set": {"bb_rssi": device["rssi"]}}) # If beacon says too close.
+            # sessions_col.update_one({"uuid": device["uuid"].lower(), "$and": [{"pp_rssi": {"$lt": device["rssi"]}}, {"pp_rssi": {"$ne": float('inf')*-1}}]}, {"$set": {"bb_verify": False}})
+            # print("BB VERIFY (FALSE): ", device["uuid"].lower())
     print("Req: ", req)
     return "Done!", 200
 
