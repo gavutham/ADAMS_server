@@ -100,11 +100,28 @@ def stop_session(year, dep, sec):
     sessions_col.update_many({"pp_verify": True}, {"$set": {"att_verified": True}})
     if mongo.is_session_started(sessions_col, year, dep, sec):
         std_data = mongo.get_session_students(sessions_col, year, dep, sec)
-        data = [{"email": i["email"], "att_verified": i["att_verified"]}
-                    for i in std_data
-                ]
-        atd_data = atd_table(std_data)
-        write_csv(atd_data, "{}{}{}-{}".format(year, dep, sec, datetime.date.today()))
+        print("\nSTOPPING SESSION!\n")
+        present = []
+        absent = []
+        for i in std_data:
+            if i["att_verified"]:
+                present.append(i["email"])
+            else:
+                absent.append(i["email"])
+        
+        print("\nPRESENT:\n")
+        print(present)
+        print("\nABSENT\n")
+        print(absent)
+        # present = [i["email"] for i in std_data if i["att_verified"] is True]
+        # absent = [i["email"] for i in std_data if i["att_verified"] is False]
+        # print("PRESENT:\n", present)
+        # print("ABSENT:\n", absent)
+        # data = [{"email": i["email"], "att_verified": i["att_verified"]}
+        #             for i in std_data
+        #         ]
+        # atd_data = atd_table(std_data)
+        # write_csv(atd_data, "{}{}{}-{}".format(year, dep, sec, datetime.date.today()))
         # mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
         sessions_col.delete_many({"year": year, "department": dep, "section": sec})
         return "Session stopped!", 200
