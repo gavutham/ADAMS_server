@@ -2,6 +2,7 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from uuid_gen import uuid_generator
+from time import time
 
 cred_obj = credentials.Certificate('credentials.json')
 default_app = firebase_admin.initialize_app(cred_obj)
@@ -38,3 +39,17 @@ def generate_sec_uuids(year,department,section,std='students'):
 
 
 # print(generate_sec_uuids('I','MECH','A','students'))
+
+def set_attendance_data(year, department, section, present, absent):
+    data = {
+        "time": firestore.firestore.SERVER_TIMESTAMP,
+        "present": present,
+        "absent": absent,
+        "year": year,
+        "department": department,
+        "section": section
+    }
+
+    current_millis = time()
+
+    db.collection(year).document(department).collection(section).document(current_millis).set(data)

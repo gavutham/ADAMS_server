@@ -3,6 +3,7 @@
 import requests
 from flask import Flask, request, make_response, jsonify
 from fire_base import firebase_server
+from fire_base.firebase_server import set_attendance_data
 from mark_attendance import mark_attendance
 from mongo import mongo
 from mysql_Server import mysql_server
@@ -124,6 +125,8 @@ def stop_session(year, dep, sec):
         # write_csv(atd_data, "{}{}{}-{}".format(year, dep, sec, datetime.date.today()))
         # mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
         sessions_col.delete_many({"year": year, "department": dep, "section": sec})
+
+        set_attendance_data(year, dep, sec, present, absent) #store the result in firebase
         return "Session stopped!", 200
     else:
         return "Session not started yet!", 404
