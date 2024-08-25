@@ -105,7 +105,7 @@ def stop_session(year, dep, sec):
                 ]
         atd_data = atd_table(std_data)
         write_csv(atd_data, "{}{}{}-{}".format(year, dep, sec, datetime.date.today()))
-        mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
+        # mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
         sessions_col.delete_many({"year": year, "department": dep, "section": sec})
         return "Session stopped!", 200
     else:
@@ -212,4 +212,5 @@ def bb_verify(year, dep, sec):
 
 
 if __name__ == '__main__':
-    app.run(host='144.91.106.164', port=8000, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
+    # app.run(host='144.91.106.164', port=8000, debug=True)

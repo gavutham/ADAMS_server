@@ -19,7 +19,9 @@ class mysql_connector:
                 host = self.host,
                 user = self.user,
                 password =self.password,
-                database = self.database
+                database = self.database,
+                port = 3306,
+                auth_plugin='mysql_native_password'
             )
             print('successfully_connected')
             self.db=mydb
@@ -76,7 +78,7 @@ class mysql_connector:
                 self.mark_attendance_mail_id(email, sub_code, prd)
 
 
-my_db_connect = mysql_connector('127.0.0.1','root','my-secret-pw','attendance_management')
+my_db_connect = mysql_connector('localhost','root','my-secret-pw','attendance_management')
 
 # my_db_connect.fetchall('attendance')
 
