@@ -3,15 +3,19 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from uuid_gen import uuid_generator
 from time import time
+from datetime import date
+from firebase_admin import db
+
 
 cred_obj = credentials.Certificate('credentials.json')
-default_app = firebase_admin.initialize_app(cred_obj)
 
-db = firestore.client()
+firebase_admin = firebase_admin.initialize_app(cred_obj, {'databaseURL': "https://adams-a4aae-default-rtdb.asia-southeast1.firebasedatabase.app"})
+
+firestore_db = firestore.client()
 
 
 def get_rcd(std):
-    users_ref = db.collection(std)
+    users_ref = firestore_db.collection(std)
     docs = users_ref.stream()
     lis = []
 
@@ -50,6 +54,20 @@ def set_attendance_data(year, department, section, present, absent):
         "section": section
     }
 
-    current_millis = time()
+    current_millis = str(time())
+    today = str(date.today())
 
-    db.collection(year).document(department).collection(section).document(current_millis).set(data)
+    firestore_db.collection("attendance").document(year).collection(department).document(section).collection(today).document(current_millis).set(data)
+
+
+def set_attendance_flag(year, department, section, state):
+    data = {
+        section: state
+    }
+
+    url = (f"{year}/{department}")
+    print(url)
+    ref = db.reference(url)
+
+    ref.update(data)
+
