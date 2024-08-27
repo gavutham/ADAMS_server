@@ -1,17 +1,20 @@
 import firebase_admin
 from firebase_admin import credentials, firestore, db as realtime_db
 from uuid_gen import uuid_generator
+from time import time
+from datetime import date
+from firebase_admin import db
 
 
-cred_obj = credentials.Certificate('D:/works/python projects/ADAMS_server/creds.json')
-config = {'databaseURL': 'https://adams-a4aae-default-rtdb.asia-southeast1.firebasedatabase.app'}
-default_app = firebase_admin.initialize_app(cred_obj, config)
+cred_obj = credentials.Certificate('credentials.json')
 
-db = firestore.client()
+firebase_admin = firebase_admin.initialize_app(cred_obj, {'databaseURL': "https://adams-a4aae-default-rtdb.asia-southeast1.firebasedatabase.app"})
+
+firestore_db = firestore.client()
 
 
 def get_rcd(std):
-    users_ref = db.collection(std)
+    users_ref = firestore_db.collection(std)
     docs = users_ref.stream()
     lis = []
 
@@ -41,7 +44,40 @@ def generate_sec_uuids(year,department,section,std='students'):
             # uuid = uuid_generator.generate_uuid().hex
             uuid = str(uuid_generator.generate_uuid())
             std['uuid'] = uuid
-            std['pp_verify'] = std['bb_verify'] = std['ready'] = std['att_verified'] = False; # ready = logged in
+            std['pp_verify'] = std['ready'] = std['att_verified'] = False; # ready = logged in
+            # std['bb_verify'] = True; # Default considered to be inside classroom.
+            std["pp_rssi"] = std["bb_rssi"] = float('inf') * -1
             print(std)
             req_stdlis.append(std)
     return req_stdlis
+
+
+# print(generate_sec_uuids('I','MECH','A','students'))
+
+def set_attendance_data(year, department, section, present, absent):
+    data = {
+        "time": firestore.firestore.SERVER_TIMESTAMP,
+        "present": present,
+        "absent": absent,
+        "year": year,
+        "department": department,
+        "section": section
+    }
+
+    current_millis = str(time())
+    today = str(date.today())
+
+    firestore_db.collection("attendance").document(year).collection(department).document(section).collection(today).document(current_millis).set(data)
+
+
+def set_attendance_flag(year, department, section, state):
+    data = {
+        section: state
+    }
+
+    url = (f"{year}/{department}")
+    print(url)
+    ref = db.reference(url)
+
+    ref.update(data)
+
