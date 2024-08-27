@@ -86,6 +86,9 @@ def start_session(year, dep, sec):
     ready_uuids = [i["uuid"] for i in
                    mongo.get_session_students(sessions_col, year, dep, sec)
                    if (i["ready"]) == True] # Only ready.
+
+    firebase_server.set_attendance_state(year, dep, sec, True)
+
     return jsonify(ready_uuids), 200
     # return "Done!", 200
     # return at_dict # for testing

@@ -1,6 +1,5 @@
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+from firebase_admin import credentials, firestore, db as realtime_db
 from uuid_gen import uuid_generator
 from time import time
 from datetime import date
@@ -23,6 +22,17 @@ def get_rcd(std):
         lis.append(doc.to_dict())
 
     return lis
+
+
+def set_attendance_state(year, dept, sec, value):
+    path = f'{year}/{dept}'
+    print(path)
+    ref = realtime_db.reference("I/MECH")
+    ref.update({
+        sec: value
+    })
+
+    return
 
 
 def generate_sec_uuids(year,department,section,std='students'):
