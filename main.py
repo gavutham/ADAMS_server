@@ -6,14 +6,11 @@ from fire_base import firebase_server
 from fire_base.firebase_server import set_attendance_data, set_attendance_flag
 from mark_attendance import mark_attendance
 from mongo import mongo
-from mysql_Server import mysql_server
 from pymongo import MongoClient
 import threading 
-import json
-
-import datetime
 import time
-import csv
+
+
 client = MongoClient('localhost', 27017)
 
 db = client["adams_server_db"]
@@ -22,29 +19,6 @@ beacons_col = db["beacons"]
 pp_status_col = db["pp_status"]
 
 app = Flask(__name__)
-
-def atd_table(dic):
-    """
-    takes the sessions completed dic as input
-    returns a list of  'email','name','bb_verify','pp_verify','att_verified values"""
-    atd_data = []
-    for students in dic:
-        atd_data.append([students['email'] ,students['name'] ,str(students['bb_verify']) ,str(students['pp_verify']) ,str(students['att_verified'])])
-    print (atd_data)
-    return atd_data
-
-
-def write_csv(data,lis_name_file):
-    '''
-    takes inp as lis of atd_data in a list of list format
-        return a csv file with name as concat of the lis_name_file with the values of atd_data
-        '''
-    file_name = ''.join(lis_name_file)+'.csv'
-
-    with open(file_name, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['email','name','bb_verify','pp_verify','att_verified'])
-        writer.writerows(data)
 
 
 @app.route('/')
@@ -112,16 +86,6 @@ def stop_session(year, dep, sec):
         print(present)
         print("\nABSENT\n")
         print(absent)
-        # present = [i["email"] for i in std_data if i["att_verified"] is True]
-        # absent = [i["email"] for i in std_data if i["att_verified"] is False]
-        # print("PRESENT:\n", present)
-        # print("ABSENT:\n", absent)
-        # data = [{"email": i["email"], "att_verified": i["att_verified"]}
-        #             for i in std_data
-        #         ]
-        # atd_data = atd_table(std_data)
-        # write_csv(atd_data, "{}{}{}-{}".format(year, dep, sec, datetime.date.today()))
-        # mysql_server.my_db_connect.mark_attendance_lis_dic_students(data, "test-sub", 9)
         sessions_col.delete_many({"year": year, "department": dep, "section": sec})
 
         set_attendance_data(year, dep, sec, present, absent) #store the result in firebase

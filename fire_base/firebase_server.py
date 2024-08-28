@@ -1,13 +1,13 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-from uuid_gen import uuid_generator
 from time import time
 from datetime import date
 from firebase_admin import db
 import os
 from dotenv import load_dotenv
 import json
+import uuid
 
 load_dotenv()
 firebaseKey = json.loads(os.getenv("FIREBASE_KEY"))
@@ -36,8 +36,7 @@ def generate_sec_uuids(year,department,section,std='students'):
     for std in std_records:
         if std['year'] == year and std['department'] == department and std['section'] == section:
             #adding uuid to the students
-            # uuid = uuid_generator.generate_uuid().hex
-            uuid = str(uuid_generator.generate_uuid())
+            uuid = str(uuid.uuid1())
             std['uuid'] = uuid
             std['pp_verify'] = std['ready'] = std['att_verified'] = False; # ready = logged in
             # std['bb_verify'] = True; # Default considered to be inside classroom.
