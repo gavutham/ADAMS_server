@@ -37,6 +37,7 @@ pycparser==2.22
 PyJWT==2.8.0
 pymongo==4.8.0
 pyparsing==3.1.2
+python-dotenv==1.0.1
 requests==2.32.3
 rsa==4.9
 uritemplate==4.1.1
