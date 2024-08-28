@@ -5,9 +5,14 @@ from uuid_gen import uuid_generator
 from time import time
 from datetime import date
 from firebase_admin import db
+import os
+from dotenv import load_dotenv
+import json
 
+load_dotenv()
+firebaseKey = json.loads(os.getenv("FIREBASE_KEY"))
 
-cred_obj = credentials.Certificate('credentials.json')
+cred_obj = credentials.Certificate(firebaseKey)
 
 firebase_admin = firebase_admin.initialize_app(cred_obj, {'databaseURL': "https://adams-a4aae-default-rtdb.asia-southeast1.firebasedatabase.app"})
 
