@@ -49,9 +49,7 @@ def write_csv(data,lis_name_file):
 
 @app.route('/')
 def hello_world():
-#have to give the variables to the display _students dynamically in post request
-    std = firebase_server.display_students('I','MECH','A')
-    return std
+    return "Hello world!"
 
 
 @app.route("/<year>/<dep>/<sec>", methods=["GET"])
