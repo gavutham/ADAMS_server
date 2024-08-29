@@ -13,8 +13,6 @@ from fire_base.firebase_server import (
     get_session_ips,
     generate_sec_uuids,
 )
-import threading
-import time
 
 
 app = Flask(__name__)
@@ -54,10 +52,6 @@ def get_student_uuid(year, dep, sec, email):
 # Top level function - TEACHER APP
 @app.route("/start-session/<year>/<dep>/<sec>")
 def start_session(year, dep, sec):
-    timeout_thread = threading.Thread(
-        target=stop_session_thread, args=(year, dep, sec)
-    )
-    timeout_thread.start()
 
     if is_session_started(year, dep, sec):
         return "Session already started!", 404
@@ -69,11 +63,6 @@ def start_session(year, dep, sec):
 
     return "Success", 200
 
-
-# done
-def stop_session_thread(year, dep, sec):
-    time.sleep(180)
-    stop_session(year, dep, sec)
 
 
 @app.route("/stop-session/<year>/<dep>/<sec>")
