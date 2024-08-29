@@ -74,7 +74,7 @@ def stop_session(year, dep, sec):
         present = []
         absent = []
         for i in std_data:
-            if i["pp_verify"]:
+            if i["pp_verify"] and i["face_verified"]:
                 present.append(i["email"])
             else:
                 absent.append(i["email"])
@@ -193,6 +193,27 @@ def pp_verify(year, dep, sec):
 def get_beacon_ips(year, dep, sec):
     ips = get_session_ips(year, dep, sec)
     return jsonify(ips)
+
+
+@app.route("/set-face-auth/<year>/<dep>/<sec>/<email>", methods=["POST"])
+def set_face_auth(year, dep, sec, email):
+    std_data = get_session_students(year, dep, sec)
+
+    updated_data = []
+
+    updated_stud = list(filter(lambda x: x["email"] == email, std_data))[0]
+    updated_stud["face_verified"] = True
+
+    for std in std_data:
+        if std["email"] == email :
+            updated_data.append(updated_stud)
+        else:
+            updated_data.append(std)
+
+    update_session_students(year, dep, sec, updated_data)
+
+    return "success", 200
+
 
 
 @app.route("/bb-verify/<year>/<dep>/<sec>", methods=["POST"])

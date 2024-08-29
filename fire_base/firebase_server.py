@@ -39,7 +39,7 @@ def generate_sec_uuids(year,department,section,std='students'):
             #adding uuid to the students
             uuid = str(uuid_gen.uuid1())
             std['uuid'] = uuid
-            std['pp_verify'] = std['ready'] = False; # ready = logged in
+            std['pp_verify'] = std['ready'] = std["face_verified"] = False# ready = logged in
             # std['bb_verify'] = True; # Default considered to be inside classroom.
             std["pp_rssi"] = std["bb_rssi"] = -1000000000
             print(std)
